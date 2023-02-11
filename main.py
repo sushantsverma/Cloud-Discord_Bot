@@ -133,18 +133,12 @@ async def on_message(message):
                         temperature=0.7, 
                         max_tokens=256
                         )
-                    answer_img = openai.Image.create(
-                        prompt=user_response.content,
-                        n=1,
-                        size="256x256"
-                        )  
 
                     answer_text = answer.choices[0]["text"]
                     answer_embed = discord.Embed(color=discord.Color.green(), title="*Your Answer*", description=answer_text)
                     answer_embed.set_author(name=client.user)
                     await user_response.reply(embed=answer_embed)
                     print(answer.choices)
-                    print(answer_img.data)
                     command_ongoing = False
                 except asyncio.TimeoutError:
                     await message.reply("Time ran out!")

@@ -142,7 +142,6 @@ async def on_message(message):
                     answer_text = answer.choices[0]["text"]
                     answer_embed = discord.Embed(color=discord.Color.green(), title="*Your Answer*", description=answer_text)
                     answer_embed.set_author(name=client.user)
-                    answer_embed.set_image(url=answer_img.data[0]["url"])
                     await user_response.reply(embed=answer_embed)
                     print(answer.choices)
                     print(answer_img.data)

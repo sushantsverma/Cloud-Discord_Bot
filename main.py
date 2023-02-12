@@ -1,5 +1,4 @@
 import discord
-import os
 import requests
 import math
 import random
@@ -8,9 +7,11 @@ from keep_online import keep_alive
 import asyncio
 import json
 import openai
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
+bot_token = os.getenv('BOT-TOKEN')
 openai.organization = os.getenv('ORG')
 openai.api_key = os.getenv('API-KEY')
 openai.Model.list()
@@ -40,7 +41,7 @@ intents.presences = True
 intents.members = True
 
 client = discord.Client(intents=intents)
-channels_allowed = [1072846609462861834, 1073826272939102288, 1073826295164710953]
+channels_allowed = [1072846609462861834, 1073826272939102288, 1073826295164710953, 1074226380058923138]
 
 memes_images_list = [
     "https://i.ytimg.com/vi/3O-RwnBmBvk/hqdefault.jpg",
@@ -93,6 +94,23 @@ async def on_message(message):
     command_ongoing = False
     if message.author == client.user:
         return
+    
+    if message.channel.id == 1074227053068554250 and message.content[0:5] == "image ":
+        user_message = message.content[6:]
+        await message.channel.send("*Generating Image...*")
+        print(f"Image requested by {message.author}")
+        response = openai.Image.create(
+        prompt=user_message,
+        n=1,
+        size="512x512"
+    )
+        image_url = response['data'][0]['url']
+        
+        embed = discord.Embed(color=discord.Color.dark_magenta(), title=f"Image generation for - {user_message}")
+        embed.set_image(url=image_url)
+        await message.reply(embed=embed)
+        print(f"Image sent. url- {image_url}")
+
     if message.content[0] == prefix and message.channel.id in channels_allowed and command_ongoing == False:
         print("User Message -", str(message.content))
         for i in bot_responses:
@@ -162,4 +180,4 @@ async def on_message_edit(before, after):
     await before.reply(embed=embed)
 
 keep_alive()
-client.run(os.getenv('BOT-TOKEN'))
+client.run(bot_token)

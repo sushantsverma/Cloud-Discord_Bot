@@ -1,0 +1,35 @@
+[33mcommit 4b443deabea7fc5f0b03bb07514442738c14dea0[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: sushantsverma <sushantsverma@hotmail.com>
+Date:   Sun Feb 12 13:20:26 2023 +0530
+
+    Added new fine tune model, modified main.py and changed .env
+
+[33mcommit 0b4f6fdfe2ed84a0893707165a57c54bd4bf6e9b[m
+Author: sushantsverma <sushantsverma@hotmail.com>
+Date:   Sat Feb 11 22:05:58 2023 +0530
+
+    Removed image function from gpt3 module
+
+[33mcommit 24db5b1ee1521bcf458e39405f60cac8b06c2da6[m
+Author: sushantsverma <sushantsverma@hotmail.com>
+Date:   Sat Feb 11 22:05:15 2023 +0530
+
+    Removed image function gpt3
+
+[33mcommit 4ecbf6cf96e1ebdb1fa037eb021b768d5ce06be2[m
+Author: sushantsverma <61629128+sushantsverma@users.noreply.github.com>
+Date:   Sat Feb 11 21:42:29 2023 +0530
+
+    Create .gitignore
+
+[33mcommit 14b91c96d970039ea265c05f38fad0af5cf1f9ce[m
+Author: sushantsverma <61629128+sushantsverma@users.noreply.github.com>
+Date:   Sat Feb 11 21:41:38 2023 +0530
+
+    Create README.md
+
+[33mcommit bd3fc25f6856b6028e454c50b83ada6c6b99376e[m
+Author: sushantsverma <61629128+sushantsverma@users.noreply.github.com>
+Date:   Sat Feb 11 21:41:13 2023 +0530
+
+    Adding all the main files

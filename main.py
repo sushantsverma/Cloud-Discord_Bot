@@ -50,6 +50,34 @@ memes_images_list = [
     "https://media.tenor.com/f0eN4x6t3gAAAAAC/discord-memes.gif"
 ]
 
+async def tod(message):
+    first_player = message.author
+    await message.reply("*Mention another player to play with*")
+    user_reply = await client.wait_for("message", 
+    check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
+    timeout=20)
+    if len(user_reply.mentions) == 1 and user_reply.mentions[0].bot == False and user_reply.mentions[0].id != message.author.id:
+        print(user_reply.mentions)
+        second_player_ID = user_reply.mentions[0].id
+        second_player_name = user_reply.mentions[0].name
+        second_player = user_reply.mentions
+        await message.channel.send(f"<@{second_player_ID}>, {message.author.name} wants to challenge you. [y/n]")
+        challenge = await client.wait_for("message", 
+                    check=lambda SentMessage: SentMessage.author.name == second_player_name and SentMessage.channel == message.channel, 
+                    timeout=10)
+        if challenge.content == "y" or challenge.content == "Y":
+            challenge_embed = discord.Embed(color=discord.Color.green(), title=f"**{second_player_name}** has accepted {message.author.name}'s challenge!")
+        elif challenge.content == "n" or challenge.content == "N":
+            challenge_embed = discord.Embed(color=discord.Color.red(), title=f"**{second_player_name}** has denied {message.author.name}'s challenge!")
+        await message.channel.send(embed=challenge_embed)
+    elif not user_reply.mentions or user_reply.mentions[0].bot == True or user_reply.mentions[0].id == message.author.id:
+        await message.reply("*Not a valid member, Restarting...*")
+        await asyncio.sleep(2)
+        return await tod(message)
+    elif len(user_reply.mentions) > 1:
+        await message.reply("*Mention only one user please, Restarting...*")
+        await asyncio.sleep(2)
+        return await tod(message)
 #Member join event
 @client.event
 async def on_member_join(member):
@@ -95,23 +123,31 @@ async def on_message(message):
     if message.author == client.user:
         return
     
-    if message.channel.id == 1074227053068554250 and message.content[0:5] == "image ":
-        user_message = message.content[6:]
-        await message.channel.send("*Generating Image...*")
-        print(f"Image requested by {message.author}")
-        response = openai.Image.create(
-        prompt=user_message,
-        n=1,
-        size="512x512"
-    )
-        image_url = response['data'][0]['url']
+    if message.channel.id == 1074227053068554250 and message.content[0:] == "image" or message.content[0:] == "Image":  
+        print(message.content)
+        print("Generating image")
+        await message.reply("Please enter the name of the image.")
+        user_message = await client.wait_for("message", 
+                    check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
+                    timeout=30)
+        try:
+            await message.channel.send("*Generating Image...*")
+            print(f"Image requested by {message.author}")
+            response = openai.Image.create(
+            prompt=user_message.content,
+            n=1,
+            size="512x512"
+        )
+            image_url = response['data'][0]['url']
         
-        embed = discord.Embed(color=discord.Color.dark_magenta(), title=f"Image generation for - {user_message}")
-        embed.set_image(url=image_url)
-        await message.reply(embed=embed)
-        print(f"Image sent. url- {image_url}")
+            embed = discord.Embed(color=discord.Color.dark_magenta(), title=f"Image generation for - {user_message.content}")
+            embed.set_image(url=image_url)
+            await message.reply(embed=embed)
+            print(f"Image sent. url- {image_url}")
+        except asyncio.TimeoutError:
+            await message.reply("Time ran out!")
 
-    if message.content[0] == prefix and message.channel.id in channels_allowed and command_ongoing == False:
+    if message.content[0] == prefix and message.channel.id in channels_allowed and command_ongoing == False and len(message.mentions) == 0:
         print("User Message -", str(message.content))
         for i in bot_responses:
             if message.content[1:] == i.lower() and command_ongoing == False:
@@ -162,6 +198,16 @@ async def on_message(message):
                     await message.reply("Time ran out!")
                     command_ongoing = False
                 return
+            elif message.content[1:] == "tod":
+                try:
+                    await tod(message)
+                except asyncio.TimeoutError:
+                    await message.reply("Timeout!")
+                return
+                truths = [
+                    'When was the last time you lied?', 'When was the last time you cried?', 'What\'s your biggest fear?', 'What\'s your biggest fantasy?', 'Do you like furries?', 'What\'s something you\'re glad your mum doesn\'t know about you?', 'Have you ever eaten pineapple on pizza?', 'What\'s the worst thing you\'ve ever done?', 'What\'s a secret you\'ve never told anyone?', 'Do you have a hidden talent?', 'Who was your first celebrity crush?', 'What are your thoughts on polyamory?', 'What\'s the worst intimate experience you\'ve ever had?', 'Have you ever cheated in an exam?', 'What\'s the most stupid thing you\'ve ever done?', 'Have you ever broken the law?', 'What\'s the most embarrassing thing you\'ve ever done?', 'What\'s your biggest insecurity?', 'What\'s the biggest mistake you\'ve ever made?', 'What\'s the most disgusting thing you\'ve ever done?', 'Who would you like to kiss in this server?', 'What\'s the worst thing anyone\'s ever done to you?', 'Have you ever had a run in with the law?', 'What\'s your worst habit?', 'What\'s the worst thing you\'ve ever said to anyone?', 'Have you ever peed in the shower?', 'What\'s the strangest dream you\'ve had?', 'Have you ever been caught doing something you shouldn\'t have?', 'What\'s the worst place you\'ve been at?', 'What\'s your biggest regret?', 'What\'s the biggest misconception about you?', 'Where\'s the weirdest place you\'ve laughed?', f'What do you think about {first_player}?', 'Have you ever lied to your friends about liking something that you don\'t actually?', 'What\'s the most trouble you\'ve been in?'
+                    ]
+                
         await message.reply(
             f"I'm sorry but I'm unable to understand that command. \n You could try using one of these instead \n {list(bot_responses)} \n *Note- These are only the basic commands available. Other commands are not listed above*")
 

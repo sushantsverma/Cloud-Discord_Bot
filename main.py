@@ -9,6 +9,7 @@ import json
 import openai
 import os
 from dotenv import load_dotenv
+import numpy
 
 load_dotenv()
 bot_token = os.getenv('BOT-TOKEN')
@@ -39,7 +40,6 @@ intents.message_content = True
 
 intents.presences = True
 intents.members = True
-
 client = discord.Client(intents=intents)
 channels_allowed = [1072846609462861834, 1073826272939102288, 1073826295164710953, 1074226380058923138]
 
@@ -49,57 +49,161 @@ memes_images_list = [
     "https://i.ytimg.com/vi/-p-afebkXvU/maxresdefault.jpg",
     "https://media.tenor.com/f0eN4x6t3gAAAAAC/discord-memes.gif"
 ]
+bot_commands = ["hi", "hru", "rolldice", "talktome", "tod", "question", "image"]
+positive_inputs = ["yes", "Yes", "y", "Y", "yessir", "Yessir"]
+negative_inputs = ["no", "No", "n", "N", "nosir", "Nosir"]
 
+# Truth or Dare game
 async def tod(message):
-    first_player = message.author
+    truths = [
+        "What are you most afraid of?", "What was your childhood nickname?", "What is your special talent?", "Can you speak a different language?", "What is something you have stolen?", "What is your dream job?", "Say 5 bad habits you have?", "What would you do with a million dollars if you ever won the lottery?", "What is the silliest thing you have an emotional attachment to?", "At what time do you wake up in the morning?", "Have you ever let someone take the blame for something you did?", "What lie have you told that hurt someone?", "What you do when you are alone at home?", "How many times a day do you eat?", "Which kind of food do you like the most?", "Favorite Place you like to visit?", "What is the most embarrassing thing your parents have caught you doing?", "What do you like about me?", "Say 5 negatives about me!", "Whom do you hate the most?", "Who do you love the most?"
+        ]
+    dares = [
+        "Pick someone in this room and (lovingly) roast them for one minute straight.", "Let another person post an Instagram caption on your behalf.", "Hand over your phone to another player who can send a single text saying anything they want to anyone they want.", "Let the other players go through your phone for one minute.", "Smell another player's armpit.", "Smell another player's bare foot.", "Eat a bite of a banana peel.", "Do an impression of another player until someone can figure out who it is.", "Say pickles at the end of every sentence you say until it's your turn again.", "Imitate a TikTok star until another player guesses who you're portraying.", "Act like a chicken until your next turn.", "Talk in a British accent until your next turn.", "Send a heart-eye emoji to your crush's Instagram story.", "Call a friend, pretend it's their birthday, and sing them Happy Birthday to You.", "Name a famous person that looks like each player in the room.", "Show us your best dance moves.", "Eat a packet of hot sauce straight.", "Let another person draw a tattoo on your back with a permanent marker.", "Put on a blindfold and touch the other players' faces until you can figure out who's who.", "Bite into a raw onion without slicing it.", "Go outside and try to “summon” the rain as loud as possible.", "Serenade the person to your right for a full minute.", "Do 20 squats.", "Let the other players redo your hairstyle.", "Eat a condiment of your choice straight from the bottle.", "Dump out your purse, backpack, or pockets and do a show and tell of what's inside.", "Let the player to your right redo your makeup with their eyes closed.", "Prank call one of your family members.", "Let another player create a hat out of toilet paper — and you have to wear it for the rest of the game.", "Do a plank for a full minute.", "Do your sassiest runway walk.", "Put five ice cubes in your mouth (you can't chew them, you just have to let them melt—brrr).", "Bark like a dog until it's your next turn.", "Draw your favorite movie and have the other person guess it (Pictionary-style).", "Repeat everything the person to your right says until your next turn.", "Demonstrate how you style your hair in the mirror (without actually using the mirror).", "Play air guitar for one minute.", "Empty a glass of cold water onto your head outside.", "Go on Instagram Live and do a dramatic reading of one of your textbooks.", "In the next 10 minutes, find a way to scare another player and make it a surprise.", "Lick a bar of soap.", "Talk to a pillow as if it's your crush.", "Post the oldest selfie on your phone to Snapchat or Instagram stories (and leave it up!).", "Attempt the first TikTok dance on your FYP.", "Imitate a celebrity of the group's choosing every time you talk for the next 10 minutes.", "Go to your crush's Instagram page and like something from several weeks ago.", "Do karaoke to a song of the group's choosing.", "Post a photo (any photo) to social with a heartfelt dedication to a celebrity of the group's choosing.", "Find your very first crush on social and DM them.", "Peel a banana using just your toes."
+        ]
+    bot_replies = ["ok but who cares LOL", "damn.", "cool now kys", "wow now shut up", "Great!", "ok and"]
     await message.reply("*Mention another player to play with*")
     user_reply = await client.wait_for("message", 
     check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
-    timeout=20)
+    timeout=60)
     if len(user_reply.mentions) == 1 and user_reply.mentions[0].bot == False and user_reply.mentions[0].id != message.author.id:
         print(user_reply.mentions)
-        second_player_ID = user_reply.mentions[0].id
-        second_player_name = user_reply.mentions[0].name
-        second_player = user_reply.mentions
-        await message.channel.send(f"<@{second_player_ID}>, {message.author.name} wants to challenge you. [y/n]")
-        challenge = await client.wait_for("message", 
-                    check=lambda SentMessage: SentMessage.author.name == second_player_name and SentMessage.channel == message.channel, 
-                    timeout=10)
-        if challenge.content == "y" or challenge.content == "Y":
-            challenge_embed = discord.Embed(color=discord.Color.green(), title=f"**{second_player_name}** has accepted {message.author.name}'s challenge!")
-        elif challenge.content == "n" or challenge.content == "N":
-            challenge_embed = discord.Embed(color=discord.Color.red(), title=f"**{second_player_name}** has denied {message.author.name}'s challenge!")
-        await message.channel.send(embed=challenge_embed)
+        second_user_ID = user_reply.mentions[0].id
+        second_user_name = user_reply.mentions[0].name
+        second_user = user_reply.mentions
+        try:
+            await message.channel.send(f"<@{second_user_ID}>, {message.author.name} wants to play T or D with you. [y/n]")
+            challenge = await client.wait_for("message", 
+                        check=lambda SentMessage: SentMessage.author.name == second_user_name and SentMessage.channel == message.channel, 
+                        timeout=60)
+            if challenge.content in positive_inputs:
+                challenge_embed = discord.Embed(color=discord.Color.green(), title=f"**{second_user_name}** has accepted {message.author.name}'s request!")
+                await message.channel.send(embed=challenge_embed)
+                await asyncio.sleep(1)
+                await message.channel.send("*Game starting...*")
+                await asyncio.sleep(2)
+                await message.channel.send("*Message first to start.*")
+                try:
+                    start_mssg = await client.wait_for("message", 
+                            check=lambda SentMessage: SentMessage.channel == message.channel, 
+                            timeout=60)
+                    if start_mssg.author.id == user_reply.author.id:
+                        first_player = start_mssg.author
+                        first_player_name = first_player.name
+                        second_player = second_user
+                        second_player_name = second_user_name
+                    elif start_mssg.author.id == second_user_ID:
+                        first_player = second_user
+                        first_player_name = second_user_name
+                        second_player = message.author
+                        second_player_name = second_player.name
+                    start_embed = discord.Embed(color=discord.Color.blue(), title=f"**{first_player_name}** will be starting.", description=f"{second_player_name} isn't so fast after all.")
+                    print(f"First player - {first_player_name}")
+                    print(f"Second player - {second_player_name}")
+                    await message.channel.send(embed=start_embed)
+                    last_message = [message async for message in message.channel.history(limit=1)]
+                    while "exit" != last_message[0].content:
+                        #First player chance                  
+                        question_embed = discord.Embed(color=discord.Color.blue(), title=f"**{first_player_name}**, Truth or Dare")
+                        question_embed.set_footer(text="your mom")
+                        
+                        await message.channel.send(embed=question_embed)
+                        answer = await client.wait_for("message", 
+                                check=lambda SentMessage: SentMessage.author.name == first_player_name and  SentMessage.channel == message.channel, 
+                                timeout=60)
+                        if answer.content == "truth" or answer.content == "Truth":
+                            truth = random.choice(truths)
+                            answer_embed = discord.Embed(color=discord.Color.gold(), title=f"**{truth}**")
+                            await answer.reply(embed=answer_embed)
+                        elif answer.content == "dare" or answer.content == "Dare":
+                            dare = random.choice(dares)
+                            answer_embed = discord.Embed(color=discord.Color.white(), title=f"**{dare}**")
+                            await answer.reply(embed=answer_embed)
+                        player_answer = await client.wait_for("message", 
+                                check=lambda SentMessage: SentMessage.author.name == first_player_name and  SentMessage.channel == message.channel, 
+                                timeout=60)                        
+                        chances = random.randint(1,10)
+                        if chances == 7:
+                            answer_reply = discord.Embed(color=discord.Color.brand_red(), title=f"**{random.choice(bot_replies)}**")
+                            await player_answer.channel.send(embed=answer_reply)
+                            
+                        #Second player chances
+                        question_embed = discord.Embed(color=discord.Color.blue(), title=f"**{second_player_name}**, Truth or Dare")
+                        question_embed.set_footer(text="your mom")
+                        
+                        await message.channel.send(embed=question_embed)
+                        answer = await client.wait_for("message", 
+                                check=lambda SentMessage: SentMessage.author.name == second_player_name and  SentMessage.channel == message.channel, 
+                                timeout=60)
+                        if answer.content == "truth" or answer.content == "Truth":
+                            truth = random.choice(truths)
+                            answer_embed = discord.Embed(color=discord.Color.gold(), title=f"**{truth}**")
+                            await answer.reply(embed=answer_embed)
+                        elif answer.content == "dare" or answer.content == "Dare":
+                            dare = random.choice(dares)
+                            answer_embed = discord.Embed(color=discord.Color.white(), title=f"**{dare}**")
+                            await answer.reply(embed=answer_embed)
+                        else:
+                            return
+                        player_answer = await client.wait_for("message", 
+                                check=lambda SentMessage: SentMessage.author.name == second_player_name and  SentMessage.channel == message.channel, 
+                                timeout=60)
+                        chances = random.randint(1,10)
+                        if chances == 7:
+                            answer_reply = discord.Embed(color=discord.Color.brand_red(), title=f"**{random.choice(bot_replies)}**")
+                            await player_answer.channel.send(embed=answer_reply)
+                    print("exit out of loop.")
+                except asyncio.TimeoutError:
+                    await start_mssg.reply("Time ran out!")
+            elif challenge.content in negative_inputs:
+                challenge_embed = discord.Embed(color=discord.Color.red(), title=f"**{second_user_name}** has denied {message.author.name}'s request!")
+                await message.channel.send(embed=challenge_embed)
+                return
+            else:
+                challenge_embed = discord.Embed(color=discord.Color.red(), title=f"**Not a valid response**")
+                await message.channel.send(embed=challenge_embed)
+                return
+        except asyncio.TimeoutError:
+            await message.channel.send("Did not reply in time.")
     elif not user_reply.mentions or user_reply.mentions[0].bot == True or user_reply.mentions[0].id == message.author.id:
-        await message.reply("*Not a valid member, Restarting...*")
+        await user_reply.reply("*Not a valid member, Restarting...*")
         await asyncio.sleep(2)
         return await tod(message)
     elif len(user_reply.mentions) > 1:
-        await message.reply("*Mention only one user please, Restarting...*")
+        await user_reply.reply("*Mention only one user please, Restarting...*")
         await asyncio.sleep(2)
         return await tod(message)
-#Member join event
+    
+    
+#Member join 
 @client.event
 async def on_member_join(member):
-    welcomeEmbed = discord.Embed(color=discord.Color.red(),
+    embed = discord.Embed(color=discord.Color.gold(),
                                  title=f"Welcome to the server **{member.name}**!")
-    welcomeEmbed.set_author(name=client.user)
-    await member.send(embed=welcomeEmbed)
+    embed.set_author(name=client.user)
+    await member.send(embed=embed)
 #Member left
 @client.event
 async def on_member_left(member):
-    welcomeEmbed = discord.Embed(color=discord.Color.red(),
+    embed = discord.Embed(color=discord.Color.red(),
                                  title=f"Imagine leaving, big L!")
-    welcomeEmbed.set_author(name=client.user)
-    await member.send(embed=welcomeEmbed)
+    embed.set_author(name=client.user)
+    await member.send(embed=embed)
 #Member banned
 @client.event
 async def on_member_ban(member):
-    welcomeEmbed = discord.Embed(color=discord.Color.red(),
+    embed = discord.Embed(color=discord.Color.red(),
                                  title=f"**Bro got banned LMAO**")
-    welcomeEmbed.set_author(name=client.user)
-    await member.send(embed=welcomeEmbed)
+    embed.set_author(name=client.user)
+    await member.send(embed=embed)
+#Member kicked
 
+@client.event
+async def on_member_kick(member):
+    embed = discord.Embed(color=discord.Color.red(),
+                                 title=f"**Get kicked loser!**")
+    embed.set_author(name=client.user)
+    await member.send(embed=embed)
 #Bot ready event
 @client.event
 async def on_ready():
@@ -118,6 +222,7 @@ async def on_message(message):
         "hru": random.choice(["I'm good, how are you?", "I'm alright, could be better.", "Eh, I need rest."]),
         "rolldice": rollDice()
     }
+    
     prefix = '-'
     command_ongoing = False
     if message.author == client.user:
@@ -129,7 +234,7 @@ async def on_message(message):
         await message.reply("Please enter the name of the image.")
         user_message = await client.wait_for("message", 
                     check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
-                    timeout=30)
+                    timeout=60)
         try:
             await message.channel.send("*Generating Image...*")
             print(f"Image requested by {message.author}")
@@ -161,7 +266,7 @@ async def on_message(message):
                 command_ongoing = True
                 print(len(message.content))
                 await message.author.send(
-                    f"**Here is a list of commands -** \n {list(bot_responses.keys())}"
+                    f"**Here is a list of commands -** \n {str(bot_commands)}"
                 )
                 command_ongoing = False
                 return 
@@ -179,7 +284,7 @@ async def on_message(message):
                     await message.channel.send("Please ask your question.")
                     user_response = await client.wait_for("message", 
                     check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
-                    timeout=10)
+                    timeout=60)
                     generating_mssg = await message.channel.send("*Generating response...*")
                     answer = openai.Completion.create(
                         model="text-davinci-003", 
@@ -199,17 +304,12 @@ async def on_message(message):
                     command_ongoing = False
                 return
             elif message.content[1:] == "tod":
-                try:
-                    await tod(message)
-                except asyncio.TimeoutError:
-                    await message.reply("Timeout!")
+                await tod(message)
                 return
-                truths = [
-                    'When was the last time you lied?', 'When was the last time you cried?', 'What\'s your biggest fear?', 'What\'s your biggest fantasy?', 'Do you like furries?', 'What\'s something you\'re glad your mum doesn\'t know about you?', 'Have you ever eaten pineapple on pizza?', 'What\'s the worst thing you\'ve ever done?', 'What\'s a secret you\'ve never told anyone?', 'Do you have a hidden talent?', 'Who was your first celebrity crush?', 'What are your thoughts on polyamory?', 'What\'s the worst intimate experience you\'ve ever had?', 'Have you ever cheated in an exam?', 'What\'s the most stupid thing you\'ve ever done?', 'Have you ever broken the law?', 'What\'s the most embarrassing thing you\'ve ever done?', 'What\'s your biggest insecurity?', 'What\'s the biggest mistake you\'ve ever made?', 'What\'s the most disgusting thing you\'ve ever done?', 'Who would you like to kiss in this server?', 'What\'s the worst thing anyone\'s ever done to you?', 'Have you ever had a run in with the law?', 'What\'s your worst habit?', 'What\'s the worst thing you\'ve ever said to anyone?', 'Have you ever peed in the shower?', 'What\'s the strangest dream you\'ve had?', 'Have you ever been caught doing something you shouldn\'t have?', 'What\'s the worst place you\'ve been at?', 'What\'s your biggest regret?', 'What\'s the biggest misconception about you?', 'Where\'s the weirdest place you\'ve laughed?', f'What do you think about {first_player}?', 'Have you ever lied to your friends about liking something that you don\'t actually?', 'What\'s the most trouble you\'ve been in?'
-                    ]
+                
                 
         await message.reply(
-            f"I'm sorry but I'm unable to understand that command. \n You could try using one of these instead \n {list(bot_responses)} \n *Note- These are only the basic commands available. Other commands are not listed above*")
+            f"*I'm sorry but I'm unable to understand that command.*")
 
 #User edit message
 @client.event

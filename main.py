@@ -56,7 +56,7 @@ memes_images_list = [
     "https://i.ytimg.com/vi/-p-afebkXvU/maxresdefault.jpg",
     "https://media.tenor.com/f0eN4x6t3gAAAAAC/discord-memes.gif"
 ]
-bot_commands = ["hi", "hru", "rolldice", "talktome", "tod", "question", "image"]
+bot_commands = ["hi", "hru", "rolldice", "talktome", "tod", "question", "image", "anim", "char", "mang"]
 positive_inputs = ["yes", "Yes", "y", "Y", "yessir", "Yessir"]
 negative_inputs = ["no", "No", "n", "N", "nosir", "Nosir"]
 
@@ -197,12 +197,14 @@ async def tod(message):
         return await tod(message)
 
 #Get anime by name.
-async def getAnime(animeToFetch):
-    anime = anilist.get_anime(animeToFetch.content)
-    sentences = len(nltk.sent_tokenize(anime['desc'])) - len(nltk.sent_tokenize(anilist.get_anime(animeToFetch.content)['desc'])) + 3
-    sentence_list = anilist.get_anime(animeToFetch.content)['desc'].split('.')
+async def getAnime(message, animeToFetch):
+    anime = anilist.get_anime(animeToFetch)
+    sentences = len(nltk.sent_tokenize(anime['desc'])) - len(nltk.sent_tokenize(anime['desc'])) + 3
+    sentence_list = anime['desc'].split('.')
     anime_desc = ' '.join([str(elem)+'.' for elem in sentence_list[0:3]])
     anime_desc = anime_desc.replace("<br>", '')
+    anime_desc = anime_desc.replace("<BR>", '')
+    anime_desc = anime_desc.replace("<i>", '')
     anime_name_en = anime['name_english']
     anime_cover_image = anime['cover_image']
     anime_tb_image = anime["banner_image"]
@@ -212,26 +214,96 @@ async def getAnime(animeToFetch):
     anime_genres = ' '.join([str(elem)+',' for elem in anilist.get_anime("One Piece")['genres'][0:genres_len-1]])+' '+genres[-1]
     
     
-    embed = discord.Embed(color=discord.Color.gold(), title=f"**{anime_name_en}**", description=anime_desc)
+    embed = discord.Embed(color=discord.Color.gold(), title=f"**{anime_name_en}**", description=f"*{anime_desc}*")
     embed.set_author(name=client.user)
-    embed.set_footer(text=anime_genres)
+    embed.set_footer(text=f"*{anime_genres}*")
     embed.set_image(url=anime_cover_image)
     embed.set_thumbnail(url=anime_tb_image)
     embed.add_field(
         name="Average Score",
-        value=anime_avg_score,
+        value=f"**{anime_avg_score}**",
         inline=True
     )
     if anime['next_airing_ep']:
         anime_episodes = anime['next_airing_ep']['episode']-1
         embed.add_field(
             name="Episodes",
-            value=anime_episodes,
+            value=f"**{anime_episodes}**",
             inline=True
         )
-    return await animeToFetch.reply(embed=embed)
-
+    return await message.reply(embed=embed)
+print
+#Get manga by name.
+async def getManga(message, mangaToFetch):
+    manga = anilist.get_manga(mangaToFetch)
+    sentences = len(nltk.sent_tokenize(manga['desc'])) - len(nltk.sent_tokenize(manga['desc'])) + 3
+    sentence_list = manga['desc'].split('.')
+    manga_desc = ' '.join([str(elem)+'.' for elem in sentence_list[0:3]])
+    manga_desc = manga_desc.replace("<br>", '')
+    manga_desc = manga_desc.replace("<BR>", '')
+    manga_desc = manga_desc.replace("<i>", '')
+    manga_name_en = manga['name_english']
+    manga_cover_image = manga['cover_image']
+    manga_tb_image = manga["banner_image"]
+    manga_avg_score = manga['average_score']
+    genres_len = len(manga['genres'])
+    genres = manga['genres']
+    manga_genres = ' '.join([str(elem)+',' for elem in anilist.get_manga("One Piece")['genres'][0:genres_len-1]])+' '+genres[-1]
+    manga_format = manga['release_format']
+    manga_status = manga['release_status']
     
+    embed = discord.Embed(color=discord.Color.gold(), title=f"**{manga_name_en}**", description=f"*{manga_desc}*")
+    embed.set_author(name=client.user)
+    embed.set_footer(text=f"*{manga_genres}*")
+    embed.set_image(url=manga_cover_image)
+    embed.set_thumbnail(url=manga_tb_image)
+    embed.add_field(
+        name="Average Score",
+        value=f"**{manga_avg_score}**",
+        inline=True
+    )
+    embed.add_field(
+        name="Release Format",
+        value=f"**{manga_format}**",
+        inline=True
+    )
+    embed.add_field(
+        name="Release Status",
+        value=f"**{manga_status}**",
+        inline=True
+    )
+    if manga['chapters']:
+        embed.add_field(
+        name="Chapters",
+        value=f"**{manga['chapters']}**",
+        inline=True
+    )  
+    if manga['volumes']:
+        embed.add_field(
+        name="Volumes",
+        value=f"**{manga['volumes']}**",
+        inline=True
+    )
+    return await message.reply(embed=embed)
+
+#Get character by name.
+async def getChar(message, charToFetch):
+    char = anilist.get_character(charToFetch)
+    sentences = len(nltk.sent_tokenize(char['desc'])) - len(nltk.sent_tokenize(char['desc'])) + 3
+    sentence_list = char['desc'].split('.')
+    char_desc = ' '.join([str(elem)+'.' for elem in sentence_list[0:3]])
+    char_desc = char_desc.replace("__", '')
+    char_desc = char_desc.replace("~", '')
+    char_desc = char_desc.replace("!", '')
+    char_first_name = char['first_name']
+    char_last_name = char['last_name']
+    char_name = char_last_name+' '+char_first_name
+    char_image = char['image']
+    embed = discord.Embed(color=discord.Color.gold(), title=f"**{char_name}**", description=f"*{char_desc}*")
+    embed.set_author(name=client.user)
+    embed.set_footer(text=f"{list(animec.sagasu.Charsearch(char_name).references.keys())[0]}")
+    embed.set_image(url=char_image)
+    await message.reply(embed=embed)
 #Member join 
 @client.event
 async def on_member_join(member):
@@ -313,7 +385,7 @@ async def on_message(message):
 
     if message.content.startswith(prefix) and message.channel.id in channels_allowed and command_ongoing == False and len(message.mentions) == 0:
         command = message.content.split(prefix)[1]
-        print(command)
+        print(f"Command - {command}")
         print("User Message -", str(message.content))
         for i in bot_responses:
             if command == i.lower() and command_ongoing == False:
@@ -323,17 +395,24 @@ async def on_message(message):
                 command_ongoing = False
                 print("Message sent")
                 return
-            elif command == "ani":
-                await message.reply("Enter the anime name.")
-                user_reply = await client.wait_for("message", 
-                    check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
-                    timeout=60)
-                try:
-                    await getAnime(user_reply)
-                    return
-                except asyncio.TimeoutError:
-                    await user_reply.reply("Timeout!")
-                    return
+            elif command.startswith('anim '):
+                animeToSearch = command.replace(command[0:5], "")
+                print(f"Anime to search - {animeToSearch}")
+                return await getAnime(message, animeToSearch)
+                
+                
+            elif command.startswith('char '):
+                charToSearch = command.replace(command[0:5], "")
+                print(f"Character to search - {charToSearch}")
+                return await getChar(message, charToSearch)
+                
+                
+            
+            elif command.startswith('mang '):
+                mangaToSearch = command.replace(command[0:5], "")
+                print(f"Manga to search {mangaToSearch}")
+                return await getManga(message, mangaToSearch)
+                
                 
                 
             elif command == "help" and command_ongoing == False:
@@ -350,34 +429,27 @@ async def on_message(message):
                 command_ongoing = False
                 return
 
-            elif command == "question" and command_ongoing == False:
+            elif command.startswith("question ") and command_ongoing == False:
+                question = command.replace(command[0:10], "")
                 command_ongoing = True
                 print(command_ongoing)
-                try:
-                    print(len(message.content))
-                    await message.channel.send("Please ask your question.")
-                    user_response = await client.wait_for("message", 
-                    check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
-                    timeout=60)
-                    generating_mssg = await message.channel.send("*Generating response...*")
-                    answer = openai.Completion.create(
-                        model="text-davinci-003", 
-                        prompt=user_response.content, 
-                        temperature=0.7, 
-                        max_tokens=256
-                        )
-
-                    answer_text = answer.choices[0]["text"]
-                    answer_embed = discord.Embed(color=discord.Color.green(), title="*Your Answer*", description=answer_text)
-                    answer_embed.set_author(name=client.user)
-                    await user_response.reply(embed=answer_embed)
-                    print(answer.choices)
-                    command_ongoing = False
-                except asyncio.TimeoutError:
-                    await message.reply("Time ran out!")
-                    command_ongoing = False
+                
+                print(len(message.content))
+                generating_mssg = await message.channel.send("*Generating response...*")
+                answer = openai.Completion.create(
+                    model="text-davinci-003", 
+                    prompt=question, 
+                    temperature=0.7, 
+                    max_tokens=256
+                    )
+                answer_text = answer.choices[0]["text"]
+                answer_embed = discord.Embed(color=discord.Color.green(), title="*Your Answer*", description=answer_text)
+                answer_embed.set_author(name=client.user)
+                await message.reply(embed=answer_embed)
+                print(answer.choices)
+                command_ongoing = False
                 return
-            elif command == "tod":
+            elif command.startswith("tod    "):
                 await tod(message)
                 return
                 

@@ -10,7 +10,13 @@ import openai
 import os
 from dotenv import load_dotenv
 import numpy
-
+import urllib3
+from AnilistPython import Anilist
+import mal
+import animec
+import nltk
+import re
+anilist = Anilist()
 load_dotenv()
 bot_token = os.getenv('BOT-TOKEN')
 openai.organization = os.getenv('ORG')
@@ -40,6 +46,7 @@ intents.message_content = True
 
 intents.presences = True
 intents.members = True
+
 client = discord.Client(intents=intents)
 channels_allowed = [1072846609462861834, 1073826272939102288, 1073826295164710953, 1074226380058923138]
 
@@ -72,7 +79,7 @@ async def tod(message):
         second_user_name = user_reply.mentions[0].name
         second_user = user_reply.mentions
         try:
-            await message.channel.send(f"<@{second_user_ID}>, {message.author.name} wants to play T or D with you. [y/n]")
+            await message.channel.send(f"<@{second_user_ID}>, **{message.author.name}** wants to play T or D with you. [y/n]")
             challenge = await client.wait_for("message", 
                         check=lambda SentMessage: SentMessage.author.name == second_user_name and SentMessage.channel == message.channel, 
                         timeout=60)
@@ -100,10 +107,10 @@ async def tod(message):
                     start_embed = discord.Embed(color=discord.Color.blue(), title=f"**{first_player_name}** will be starting.", description=f"{second_player_name} isn't so fast after all.")
                     print(f"First player - {first_player_name}")
                     print(f"Second player - {second_player_name}")
-                    await message.channel.send(embed=start_embed)
-                    last_message = [message async for message in message.channel.history(limit=1)]
-                    while "exit" != last_message[0].content:
-                        #First player chance                  
+                    await message.channel.send(embed=start_embed)       
+                    while True:
+                        #First player chance
+                                         
                         question_embed = discord.Embed(color=discord.Color.blue(), title=f"**{first_player_name}**, Truth or Dare")
                         question_embed.set_footer(text="your mom")
                         
@@ -111,19 +118,27 @@ async def tod(message):
                         answer = await client.wait_for("message", 
                                 check=lambda SentMessage: SentMessage.author.name == first_player_name and  SentMessage.channel == message.channel, 
                                 timeout=60)
-                        if answer.content == "truth" or answer.content == "Truth":
+                        if answer.content == "exit":
+                            await message.channel.send("*Game stopped.*")
+                            return 
+                        elif answer.content == "truth" or answer.content == "Truth" or answer.content == "T" or answer.content == "t":
                             truth = random.choice(truths)
                             answer_embed = discord.Embed(color=discord.Color.gold(), title=f"**{truth}**")
                             await answer.reply(embed=answer_embed)
-                        elif answer.content == "dare" or answer.content == "Dare":
+                        elif answer.content == "dare" or answer.content == "Dare" or answer.content == "D" or answer.content == "d":
                             dare = random.choice(dares)
-                            answer_embed = discord.Embed(color=discord.Color.white(), title=f"**{dare}**")
+                            answer_embed = discord.Embed(color=discord.Color.red(), title=f"**{dare}**")
                             await answer.reply(embed=answer_embed)
+                        else:
+                            return await answer.reply("Not a valid response.")
                         player_answer = await client.wait_for("message", 
                                 check=lambda SentMessage: SentMessage.author.name == first_player_name and  SentMessage.channel == message.channel, 
-                                timeout=60)                        
-                        chances = random.randint(1,10)
-                        if chances == 7:
+                                timeout=60)
+                        if player_answer.content == "exit":
+                            await message.channel.send("*Game stopped.*")
+                            return                         
+                        chances = random.randint(1,100)
+                        if chances == 75:
                             answer_reply = discord.Embed(color=discord.Color.brand_red(), title=f"**{random.choice(bot_replies)}**")
                             await player_answer.channel.send(embed=answer_reply)
                             
@@ -135,24 +150,31 @@ async def tod(message):
                         answer = await client.wait_for("message", 
                                 check=lambda SentMessage: SentMessage.author.name == second_player_name and  SentMessage.channel == message.channel, 
                                 timeout=60)
-                        if answer.content == "truth" or answer.content == "Truth":
+                        if answer.content == "exit":
+                            await message.channel.send("*Game stopped.*")
+                            return 
+                        if answer.content == "truth" or answer.content == "Truth" or answer.content == "T" or answer.content == "t":
                             truth = random.choice(truths)
                             answer_embed = discord.Embed(color=discord.Color.gold(), title=f"**{truth}**")
                             await answer.reply(embed=answer_embed)
-                        elif answer.content == "dare" or answer.content == "Dare":
+                        elif answer.content == "dare" or answer.content == "Dare" or answer.content == "D" or answer.content == "d":
                             dare = random.choice(dares)
-                            answer_embed = discord.Embed(color=discord.Color.white(), title=f"**{dare}**")
+                            answer_embed = discord.Embed(color=discord.Color.red(), title=f"**{dare}**")
                             await answer.reply(embed=answer_embed)
                         else:
-                            return
+                            return await answer.reply("Not a valid response.")
                         player_answer = await client.wait_for("message", 
                                 check=lambda SentMessage: SentMessage.author.name == second_player_name and  SentMessage.channel == message.channel, 
                                 timeout=60)
+                        if player_answer.content == "exit":
+                            await message.channel.send("*Game stopped.*")
+                            return 
                         chances = random.randint(1,10)
                         if chances == 7:
                             answer_reply = discord.Embed(color=discord.Color.brand_red(), title=f"**{random.choice(bot_replies)}**")
                             await player_answer.channel.send(embed=answer_reply)
                     print("exit out of loop.")
+                    await message.channel.send("Exit the game.")
                 except asyncio.TimeoutError:
                     await start_mssg.reply("Time ran out!")
             elif challenge.content in negative_inputs:
@@ -173,7 +195,42 @@ async def tod(message):
         await user_reply.reply("*Mention only one user please, Restarting...*")
         await asyncio.sleep(2)
         return await tod(message)
+
+#Get anime by name.
+async def getAnime(animeToFetch):
+    anime = anilist.get_anime(animeToFetch.content)
+    sentences = len(nltk.sent_tokenize(anime['desc'])) - len(nltk.sent_tokenize(anilist.get_anime(animeToFetch.content)['desc'])) + 3
+    sentence_list = anilist.get_anime(animeToFetch.content)['desc'].split('.')
+    anime_desc = ' '.join([str(elem)+'.' for elem in sentence_list[0:3]])
+    anime_desc = anime_desc.replace("<br>", '')
+    anime_name_en = anime['name_english']
+    anime_cover_image = anime['cover_image']
+    anime_tb_image = anime["banner_image"]
+    anime_avg_score = anime['average_score']
+    genres_len = len(anime['genres'])
+    genres = anime['genres']
+    anime_genres = ' '.join([str(elem)+',' for elem in anilist.get_anime("One Piece")['genres'][0:genres_len-1]])+' '+genres[-1]
     
+    
+    embed = discord.Embed(color=discord.Color.gold(), title=f"**{anime_name_en}**", description=anime_desc)
+    embed.set_author(name=client.user)
+    embed.set_footer(text=anime_genres)
+    embed.set_image(url=anime_cover_image)
+    embed.set_thumbnail(url=anime_tb_image)
+    embed.add_field(
+        name="Average Score",
+        value=anime_avg_score,
+        inline=True
+    )
+    if anime['next_airing_ep']:
+        anime_episodes = anime['next_airing_ep']['episode']-1
+        embed.add_field(
+            name="Episodes",
+            value=anime_episodes,
+            inline=True
+        )
+    return await animeToFetch.reply(embed=embed)
+
     
 #Member join 
 @client.event
@@ -217,13 +274,15 @@ def rollDice():
 @client.event
 async def on_message(message):
     #List of bot responses
+    prefix = 'c$'
+        
     bot_responses = {
         "hi": random.choice([f"Hey there **{message.author.name}**", f"Hello {message.author.name}, how's your day so far?", f"Wsg cuh, how's life?"]),
         "hru": random.choice(["I'm good, how are you?", "I'm alright, could be better.", "Eh, I need rest."]),
         "rolldice": rollDice()
     }
     
-    prefix = '-'
+    
     command_ongoing = False
     if message.author == client.user:
         return
@@ -252,17 +311,32 @@ async def on_message(message):
         except asyncio.TimeoutError:
             await message.reply("Time ran out!")
 
-    if message.content[0] == prefix and message.channel.id in channels_allowed and command_ongoing == False and len(message.mentions) == 0:
+    if message.content.startswith(prefix) and message.channel.id in channels_allowed and command_ongoing == False and len(message.mentions) == 0:
+        command = message.content.split(prefix)[1]
+        print(command)
         print("User Message -", str(message.content))
         for i in bot_responses:
-            if message.content[1:] == i.lower() and command_ongoing == False:
+            if command == i.lower() and command_ongoing == False:
                 command_ongoing = True
                 message_to_send = bot_responses[i]
                 await message.reply(message_to_send)
                 command_ongoing = False
                 print("Message sent")
                 return
-            elif message.content[1:] == "help" and command_ongoing == False:
+            elif command == "ani":
+                await message.reply("Enter the anime name.")
+                user_reply = await client.wait_for("message", 
+                    check=lambda SentMessage: SentMessage.author == message.author and SentMessage.channel == message.channel, 
+                    timeout=60)
+                try:
+                    await getAnime(user_reply)
+                    return
+                except asyncio.TimeoutError:
+                    await user_reply.reply("Timeout!")
+                    return
+                
+                
+            elif command == "help" and command_ongoing == False:
                 command_ongoing = True
                 print(len(message.content))
                 await message.author.send(
@@ -270,13 +344,13 @@ async def on_message(message):
                 )
                 command_ongoing = False
                 return 
-            elif message.content[1:] == "talktome" and command_ongoing == False:
+            elif command == "talktome" and command_ongoing == False:
                 command_ongoing = True
                 await message.reply("Later.")
                 command_ongoing = False
                 return
 
-            elif message.content[1:] == "question" and command_ongoing == False:
+            elif command == "question" and command_ongoing == False:
                 command_ongoing = True
                 print(command_ongoing)
                 try:
@@ -303,7 +377,7 @@ async def on_message(message):
                     await message.reply("Time ran out!")
                     command_ongoing = False
                 return
-            elif message.content[1:] == "tod":
+            elif command == "tod":
                 await tod(message)
                 return
                 
